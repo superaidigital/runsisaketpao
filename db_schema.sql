@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 22, 2025 at 09:19 AM
+-- Generation Time: Nov 05, 2025 at 02:01 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.1.25
 
@@ -47,9 +47,9 @@ CREATE TABLE `distances` (
 INSERT INTO `distances` (`id`, `event_id`, `name`, `price`, `category`, `bib_color`, `bib_prefix`, `bib_start_number`, `bib_padding`, `bib_next_number`) VALUES
 (3, 2, '25 KM', 1200.00, 'Ultra Trail', '#4f46e5', NULL, 1, 4, NULL),
 (4, 2, '10 KM', 900.00, 'Beginner Trail', '#4f46e5', NULL, 1, 4, NULL),
-(40, 1, '10 KM', 850.00, 'Mini Marathon', '#4f46e5', NULL, 1, 4, NULL),
-(41, 1, '5 KM', 650.00, 'Fun Run', '#4f46e5', NULL, 1, 4, NULL),
-(42, 1, '1 KM', 450.00, 'Mini', '#4f46e5', NULL, 1, 4, NULL);
+(43, 1, '10 KM', 850.00, 'Mini Marathon', '#4f46e5', NULL, 1, 4, NULL),
+(44, 1, '5 KM', 650.00, 'Fun Run', '#4f46e5', NULL, 1, 4, NULL),
+(45, 1, '1 KM', 450.00, 'Mini', '#4f46e5', NULL, 1, 4, NULL);
 
 -- --------------------------------------------------------
 
@@ -100,7 +100,7 @@ CREATE TABLE `events` (
 --
 
 INSERT INTO `events` (`id`, `event_code`, `name`, `slogan`, `theme_color`, `color_code`, `logo_text`, `is_visible`, `is_cancelled`, `sort_order`, `is_registration_open`, `organizer`, `organizer_phone`, `organizer_email`, `organizer_line_id`, `organizer_logo_url`, `contact_person_name`, `contact_person_phone`, `payment_bank`, `payment_account_name`, `payment_account_number`, `payment_qr_code_url`, `start_date`, `cover_image_url`, `card_thumbnail_url`, `map_embed_url`, `map_direction_url`, `description`, `awards_description`, `bib_prefix`, `bib_start_number`, `bib_padding`, `bib_next_number`, `corral_settings`, `bib_background_url`) VALUES
-(1, 'sskpa-run-25', 'kokphet Run For Love 2024', 'วิ่งสร้างสรรค์, เพื่อชุมชนยั่งยืน', 'indigo', '#4f46e5', 'SSKPAO RUN 🏃‍♀️', 1, 0, 1, 1, 'รพสต.โคกเพชร', '045-888-999', 'ssk-pao@run.com', '@sskpaorun', 'uploads/sskpa-run-25/organizer/organizer_68f729c73fa4d.png', 'คุณสมหญิง ใจดี (ฝ่ายทะเบียน)', '087-9617951', 'ธนาคาร SISAKET RUN', 'SISAKET PAO RUN', '123-456-7890', 'uploads/sskpa-run-25/payment/payment_68f50c3e0b33a.jpg', '2025-11-15 18:00:00', 'uploads/sskpa-run-25/cover/cover_68f5d4c9412f0.webp', 'uploads/sskpa-run-25/cover/cover_68f5d4c9416ae.webp', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3889.375005898851!2d104.3005556!3d15.1111111!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x311a2f5f5c5b4e3d%3A0x8c5b1b4b1a4a4b1c!2sSisaket%20Provincial%20Stadium!5e0!3m2!1sen!2sth!4v1678888888888!5m2!1sen!2sth', 'https://maps.google.com/?q=Sisaket+Provincial+Stadium', '<p><em><strong>Fancy รวมทุกรุ่น 6 รางวัลๆละ 500 พร้อมเกียรติบัตร</strong></em></p>\r\n\r\n<p><strong>รางวัล 1000-600-400</strong></p>\r\n\r\n<p><strong>สมัครวิ่งได้เหรียญทุกคน -ชนะเลิศ 1-2-3 เกียรติบัตร</strong></p>\r\n', '<p>Fancy รวมทุกรุ่น 6 รางวัลๆละ 500 พร้อมเกียรติบัตร</p>\r\n\r\n<p><strong>รางวัล 1000-600-400</strong></p>\r\n\r\n<p><strong>สมัครวิ่งได้เหรียญทุกคน -ชนะเลิศ 1-2-3 เกียรติบัตร</strong></p>\r\n', NULL, 1, 4, 4, NULL, NULL),
+(1, 'sskpa-run-25', 'kokphet Run For Love 2024', 'วิ่งสร้างสรรค์, เพื่อชุมชนยั่งยืน', 'indigo', '#4f46e5', 'SSKPAO RUN 🏃‍♀️', 1, 0, 1, 1, 'รพสต.โคกเพชร', '045-888-999', 'ssk-pao@run.com', '@sskpaorun', 'uploads/sskpa-run-25/organizer/organizer_68f729c73fa4d.png', 'คุณสมหญิง ใจดี (ฝ่ายทะเบียน)', '087-9617951', 'ธนาคาร SISAKET RUN', 'SISAKET PAO RUN', '123-456-7890', 'uploads/sskpa-run-25/payment/payment_68f50c3e0b33a.jpg', '2025-11-15 18:00:00', 'uploads/sskpa-run-25/cover/cover_68f5d4c9412f0.webp', 'uploads/sskpa-run-25/cover/cover_68f5d4c9416ae.webp', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3889.375005898851!2d104.3005556!3d15.1111111!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x311a2f5f5c5b4e3d%3A0x8c5b1b4b1a4a4b1c!2sSisaket%20Provincial%20Stadium!5e0!3m2!1sen!2sth!4v1678888888888!5m2!1sen!2sth', 'https://maps.google.com/?q=Sisaket+Provincial+Stadium', '<p><em><strong>Fancy รวมทุกรุ่น 6 รางวัลๆละ 500 พร้อมเกียรติบัตร</strong></em></p>\r\n\r\n<p><strong>รางวัล 1000-600-400</strong></p>\r\n\r\n<p><strong>สมัครวิ่งได้เหรียญทุกคน -ชนะเลิศ 1-2-3 เกียรติบัตร</strong></p>\r\n', '<p>Fancy รวมทุกรุ่น 6 รางวัลๆละ 500 พร้อมเกียรติบัตร</p>\r\n\r\n<p><strong>รางวัล 1000-600-400</strong></p>\r\n\r\n<p><strong>สมัครวิ่งได้เหรียญทุกคน -ชนะเลิศ 1-2-3 เกียรติบัตร</strong></p>\r\n', '', 1, 4, 5, '[{\"name\":\"A\",\"color\":\"#3b82f6\",\"time\":\"04:00\",\"description\":\"\"},{\"name\":\"B\",\"color\":\"#f7d83b\",\"time\":\"05:00\",\"description\":\"\"},{\"name\":\"C\",\"color\":\"#87380d\",\"time\":\"\",\"description\":\"\"}]', NULL),
 (2, 'mountain-trail-challenge-25', 'Mountain Trail Challenge 2025', 'พิชิตยอดเขา.. ท้าทายขีดจำกัด!', 'green', '#10b981', 'TRAIL CHALLENGE ⛰️', 1, 0, 2, 0, 'Thai Trail Runners Club', '090-555-4444', 'trail@run.com', '@thaitrail', NULL, 'คุณอดิศักดิ์ แข็งแรง (Race Director)', '090-111-2222', 'ธนาคาร TRAIL RUN', 'TRAIL RUNNING TEAM', '987-654-3210', 'https://placehold.co/300x300/10b981/ffffff?text=TRAIL+QR+Code', '2025-08-15 06:00:00', 'https://placehold.co/800x300/10b981/ffffff?text=Mountain+Trail+Cover', 'https://placehold.co/400x150/10b981/ffffff?text=Mountain+Trail+Card', 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3889.375005898851!2d101.4000000!3d14.4000000!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x311a2f5f5c5b4e3d%3A0x8c5b1b4b1a4a4b1c!2sKhao%20Yai%20National%20Park!5e0!3m2!1sen!2sth!4v1678888888888!5m2!1sen!2sth', 'https://maps.google.com/?q=Khao+Yai+National+Park', 'การแข่งขันวิ่งเทรลสุดท้าทายในพื้นที่เขาใหญ่', '**รางวัลสำหรับ 25 KM (Ultra Trail):**\r\n\r\n- Overall Male/Female (Top 5): **ถ้วยรางวัล King/Queen of the Mountain**', NULL, 1, 4, 1, NULL, NULL);
 
 -- --------------------------------------------------------
@@ -272,6 +272,15 @@ CREATE TABLE `race_categories` (
   `maxAge` int(11) NOT NULL DEFAULT 99
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `race_categories`
+--
+
+INSERT INTO `race_categories` (`id`, `event_id`, `distance`, `name`, `gender`, `minAge`, `maxAge`) VALUES
+(6, 1, '10 KM', '18-29 ปี', 'ชาย', 18, 29),
+(7, 1, '10 KM', '30-39', 'ชาย', 30, 39),
+(8, 1, '10 KM', '40-49 ปี', 'ชาย', 40, 49);
+
 -- --------------------------------------------------------
 
 --
@@ -311,7 +320,7 @@ CREATE TABLE `registrations` (
 --
 
 INSERT INTO `registrations` (`id`, `registration_code`, `user_id`, `event_id`, `distance_id`, `race_category_id`, `bib_number`, `corral`, `shirt_size`, `status`, `payment_slip_url`, `registered_at`, `title`, `first_name`, `last_name`, `gender`, `email`, `phone`, `line_id`, `thai_id`, `birth_date`, `disease`, `disease_detail`, `emergency_contact_name`, `emergency_contact_phone`) VALUES
-(11, 'RUN2025-45A7FB', NULL, 1, 40, NULL, '0003', NULL, 'XL', 'ชำระเงินแล้ว', 'uploads/slip_1761045456_82b1fdae878124d5.jpg', '2025-10-21 11:17:36', 'นาย', 'ปฐวีกานต์', 'ศรีคราม', 'ชาย', 'adminmax@gmail.com', '0981051534', NULL, '1332000000946', '1994-12-07', 'ไม่มีโรคประจำตัว', NULL, 'ปฐวีกานต์', '0981051534');
+(12, 'RUN2025-5E1ACE', NULL, 1, 43, 7, '888', NULL, 'XL', 'ชำระเงินแล้ว', 'uploads/slip_1762166388_0d958bd23b3ef5fd.png', '2025-11-03 10:39:48', 'นาย', 'ปฐวีกานต์', 'ศรีคราม', 'ชาย', 'adminmax@gmail.com', '0981051534', NULL, '1332000000946', '1994-12-07', 'ไม่มีโรคประจำตัว', NULL, 'ปฐวีกานต์', '0981051534');
 
 -- --------------------------------------------------------
 
@@ -577,7 +586,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `distances`
 --
 ALTER TABLE `distances`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 --
 -- AUTO_INCREMENT for table `events`
@@ -631,13 +640,13 @@ ALTER TABLE `master_titles`
 -- AUTO_INCREMENT for table `race_categories`
 --
 ALTER TABLE `race_categories`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `registrations`
 --
 ALTER TABLE `registrations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `registration_data`
