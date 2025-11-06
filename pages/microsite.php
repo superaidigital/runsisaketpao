@@ -58,6 +58,9 @@ $merch_images = array_values(array_filter($images_result, fn($img) => $img['imag
 $medal_images = array_values(array_filter($images_result, fn($img) => $img['image_type'] == 'medal'));
 $detail_images = array_values(array_filter($images_result, fn($img) => $img['image_type'] == 'detail'));
 
+// [NEW] Define allowed HTML tags for sanitization
+$allowed_html = '<p><strong><em><ul><li><br><b><i><a>';
+
 // Set Page Title and Theme Color
 $page_title = $event['name'];
 echo "<style>
@@ -156,7 +159,11 @@ echo "<style>
     <div class="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
         <h3 class="font-bold text-lg mb-2 text-primary">รายละเอียดกิจกรรม</h3>
         <div class="text-sm text-gray-700 leading-relaxed description-content">
-            <?= $event['description'] // Output raw HTML from CKEditor ?>
+            <?php 
+                // [FIXED] Sanitize HTML output to prevent XSS
+                // Allow only basic formatting tags from CKEditor
+                echo strip_tags($event['description'], $allowed_html); 
+            ?>
         </div>
     </div>
 
@@ -316,7 +323,14 @@ function toggleSchedule() {
 // Note: The main modal functions like openGallery() are in footer.php
 
 function showAwardsDetail() {
-    const awardsHtml = <?= json_encode($event['awards_description'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
+    <?php
+        // [FIXED] Sanitize awards description here before passing to JavaScript
+        // This prevents XSS when inserting into innerHTML
+        $safe_awards_html = strip_tags($event['awards_description'], $allowed_html);
+    ?>
+    
+    // Use the sanitized PHP variable in JavaScript
+    const awardsHtml = <?= json_encode($safe_awards_html, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) ?>;
     
     document.getElementById('message-title').textContent = `รายละเอียดของรางวัล`;
     document.getElementById('message-text').classList.add('hidden');
@@ -327,4 +341,3 @@ function showAwardsDetail() {
     document.getElementById('message-box').classList.remove('hidden');
 }
 </script>
-

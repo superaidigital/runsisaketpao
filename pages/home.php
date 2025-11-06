@@ -15,6 +15,17 @@ $events_stmt->execute();
 $events_result = $events_stmt->get_result();
 $events = $events_result->fetch_all(MYSQLI_ASSOC);
 $events_stmt->close();
+
+// --- NEW: Fetch Latest News Posts ---
+// ดึงข่าวสาร 3 รายการล่าสุด
+// --- FIX: Changed 'summary' to 'content' ---
+// --- FIX 2: Changed 'image_url' to 'cover_image_url' ---
+// --- FIX 3: Changed 'is_active' to 'is_published' ---
+$posts_stmt = $mysqli->prepare("SELECT id, title, content, cover_image_url, created_at FROM posts WHERE is_published = 1 ORDER BY created_at DESC LIMIT 3");
+$posts_stmt->execute();
+$posts_result = $posts_stmt->get_result();
+$posts = $posts_result->fetch_all(MYSQLI_ASSOC);
+$posts_stmt->close();
 ?>
 
 <!-- Carousel Section -->
@@ -85,6 +96,54 @@ $events_stmt->close();
     <?php endif; ?>
 </div>
 
+<!-- === NEW: News Section === -->
+<div class="mt-12">
+    <div class="flex justify-between items-center mb-6">
+         <h2 class="text-3xl font-extrabold text-gray-800">ข่าวสารและประกาศ</h2>
+         <a href="index.php?page=news" class="text-sm font-semibold text-primary hover:underline">
+            ดูข่าวสารทั้งหมด <i class="fa-solid fa-arrow-right ml-1"></i>
+         </a>
+    </div>
+   
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <?php if (empty($posts)): ?>
+            <div class="col-span-1 md:col-span-3 text-center p-10 border-2 border-dashed border-gray-300 rounded-lg text-gray-500">
+                <i class="fa-solid fa-newspaper text-3xl mb-3"></i>
+                <p>ยังไม่มีข่าวสารในขณะนี้</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($posts as $post): ?>
+                <div class="rounded-xl shadow-lg border border-gray-200 transition duration-300 hover:shadow-xl hover:border-primary cursor-pointer overflow-hidden" 
+                     onclick="window.location.href='index.php?page=news_detail&id=<?= e($post['id']) ?>'">
+                    
+                    <div class="h-36 bg-cover bg-center" style="background-image: url('<?= e($post['cover_image_url'] ?? 'https://placehold.co/400x150/cccccc/ffffff?text=News') ?>');"></div>
+                    
+                    <div class="p-4">
+                        <h3 class="text-lg font-bold mb-1 text-gray-900 line-clamp-2"><?= e($post['title']) ?></h3>
+                        
+                        <?php
+                        // --- FIX: Create summary from 'content' ---
+                        $summary = strip_tags($post['content']); // ลบ HTML tags
+                        if (mb_strlen($summary) > 100) { // ตัดข้อความให้สั้นลง
+                            $summary = mb_substr($summary, 0, 100) . '...';
+                        }
+                        ?>
+                        <p class="text-gray-600 mb-3 text-sm line-clamp-2"><?= e($summary) ?></p>
+                        
+                        <div class="flex flex-col space-y-1 text-xs">
+                            <span class="flex items-center text-gray-700">
+                                <i class="fa-solid fa-calendar-alt w-5 mr-2"></i> เผยแพร่เมื่อ: <?= date("d M Y", strtotime($post['created_at'])) ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+</div>
+<!-- === End of News Section === -->
+
+
 <script>
 let currentSlideIndex = 0;
 let carouselInterval;
@@ -136,4 +195,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
-

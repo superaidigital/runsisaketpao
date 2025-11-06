@@ -25,11 +25,14 @@ $runner_info = $is_runner_logged_in ? $_SESSION['user_info'] : null;
 $user_registrations = [];
 if ($is_runner_logged_in) {
     $user_id = $_SESSION['user_id'];
-    // Ensure `r.id` is selected for the E-BIB link
+    // [MODIFIED] Added r.total_amount, e.payment_*, e.payment_deadline for the modal
     $stmt = $mysqli->prepare("
         SELECT 
             r.id, r.registration_code, r.status, r.bib_number, r.shirt_size,
+            r.total_amount,
             e.name AS event_name, e.event_code,
+            e.payment_bank, e.payment_account_name, e.payment_account_number, 
+            e.payment_qr_code_url, e.payment_deadline,
             d.name AS distance_name,
             rc.name AS category_name
         FROM registrations r
@@ -61,6 +64,19 @@ if ($is_runner_logged_in) {
                 <i class="fa-solid fa-user-edit mr-2"></i> แก้ไขโปรไฟล์
              </a>
         </div>
+
+        <?php if ($success_message): ?>
+        <div class="bg-green-100 border-l-4 border-green-500 text-green-800 p-4 rounded-md shadow-sm" role="alert">
+            <p class="font-bold"><i class="fa-solid fa-check-circle mr-2"></i>สำเร็จ!</p>
+            <p><?= e($success_message) ?></p>
+        </div>
+        <?php endif; ?>
+        <?php if ($error_message): ?>
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-800 p-4 rounded-md shadow-sm" role="alert">
+            <p class="font-bold"><i class="fa-solid fa-exclamation-triangle mr-2"></i>เกิดข้อผิดพลาด</p>
+            <p><?= e($error_message) ?></p>
+        </div>
+        <?php endif; ?>
 
         <h3 class="text-2xl font-bold text-gray-800 border-b pb-2">ประวัติการสมัคร</h3>
 
@@ -104,6 +120,28 @@ if ($is_runner_logged_in) {
                                 <i class="fa-solid fa-download mr-1"></i> E-BIB
                             </a>
                             <?php endif; ?>
+                            
+                            <!-- [NEW] Pay Later Button Logic -->
+                            <?php if ($reg['status'] == 'รอชำระเงิน'): ?>
+                                <?php
+                                $is_expired = false;
+                                if (!empty($reg['payment_deadline'])) {
+                                    $deadline = new DateTime($reg['payment_deadline']);
+                                    $now = new DateTime();
+                                    if ($now > $deadline) {
+                                        $is_expired = true;
+                                    }
+                                }
+                                ?>
+                                <?php if ($is_expired): ?>
+                                    <span class="bg-gray-100 text-gray-500 font-semibold py-1 px-3 rounded-md text-xs">หมดเขตชำระเงิน</span>
+                                <?php else: ?>
+                                    <button onclick='showPaymentModalLoggedIn(<?= e($reg['id']) ?>, "<?= e($reg['registration_code']) ?>", <?= json_encode($reg) ?>)' class="bg-red-500 text-white font-semibold py-1 px-3 rounded-md text-xs hover:bg-red-600 transition">
+                                        <i class="fa-solid fa-money-bill-wave mr-1"></i> แจ้งชำระเงิน
+                                    </button>
+                                <?php endif; ?>
+                            <?php endif; ?>
+
                             <a href="index.php?page=microsite&event_code=<?= e($reg['event_code']) ?>" class="text-primary hover:underline font-semibold">ดูรายละเอียดกิจกรรม <i class="fa-solid fa-arrow-right ml-1"></i></a>
                         </div>
                     </div>
@@ -159,6 +197,27 @@ if ($is_runner_logged_in) {
                          <p><strong>อีเมล:</strong><br><?= e(mask_email($search_result['email'])) ?></p>
                          <p><strong>เบอร์โทรศัพท์:</strong><br><?= e(mask_phone($search_result['phone'])) ?></p>
                      </div>
+
+                     <!-- [NEW] Pay Later Button Logic for Guest -->
+                     <?php if ($search_result['status'] == 'รอชำระเงิน'): ?>
+                        <?php
+                        $is_expired_guest = false;
+                        if (!empty($search_result['payment_deadline'])) {
+                            $deadline_guest = new DateTime($search_result['payment_deadline']);
+                            $now_guest = new DateTime();
+                            if ($now_guest > $deadline_guest) {
+                                $is_expired_guest = true;
+                            }
+                        }
+                        ?>
+                        <?php if ($is_expired_guest): ?>
+                            <span class="w-full bg-gray-100 text-gray-500 font-semibold py-2 px-3 rounded-md text-xs text-center">หมดเขตชำระเงิน</span>
+                        <?php else: ?>
+                            <button onclick='showPaymentModal(<?= e($search_result['registration_id']) ?>, "<?= e($search_result['registration_code']) ?>", <?= json_encode($search_result) ?>)' class="w-full bg-red-500 text-white font-semibold py-2 px-3 rounded-md text-sm hover:bg-red-600 transition">
+                                <i class="fa-solid fa-money-bill-wave mr-1"></i> แจ้งชำระเงิน
+                            </button>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -212,3 +271,139 @@ if ($is_runner_logged_in) {
     <?php endif; // ปิด if ($is_runner_logged_in) ?>
 
 </div>
+
+<!-- [NEW] Payment Modal Script -->
+<script>
+    // --- Helper function to format deadline ---
+    function formatDeadline(deadlineStr) {
+        if (!deadlineStr) return null;
+        try {
+            const date = new Date(deadlineStr);
+            const options = { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+            // เพิ่ม 543 ปีสำหรับ พ.ศ.
+            const thaiYear = date.getFullYear() + 543;
+            let formatted = date.toLocaleDateString('th-TH', options);
+            // แทนที่ปี ค.ศ. ด้วย พ.ศ.
+            return formatted.replace(date.getFullYear(), thaiYear);
+        } catch (e) {
+            console.error("Invalid date format:", deadlineStr);
+            return null;
+        }
+    }
+
+    // --- Modal function for GUESTS (from search result) ---
+    function showPaymentModal(regId, regCode, eventData) {
+        const modal = document.getElementById('message-box');
+        if (!modal) return;
+        
+        const title = document.getElementById('message-title');
+        const content = document.getElementById('message-content-container');
+        const text = document.getElementById('message-text');
+        
+        title.textContent = `แจ้งชำระเงิน: ${regCode}`;
+        text.classList.add('hidden');
+        
+        // [MODIFIED] Use total_amount instead of price
+        const amount = parseFloat(eventData.total_amount || 0);
+        const deadline = formatDeadline(eventData.payment_deadline);
+
+        let deadlineHtml = '';
+        if (deadline) {
+            deadlineHtml = `<p class="text-center text-red-600 font-semibold text-sm mb-4">
+                            กรุณาชำระเงินและแจ้งโอนภายในวันที่ ${deadline} น.
+                          </p>`;
+        }
+
+        content.innerHTML = `
+            <form id="payment-form" action="actions/submit_payment.php" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <input type="hidden" name="registration_id" value="${regId}">
+                
+                <div class="w-full bg-blue-600 text-white p-4 rounded-lg text-center">
+                    <p class="text-sm">ยอดที่ต้องชำระ</p>
+                    <p class="text-3xl font-bold">${amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท</p>
+                </div>
+                
+                <p class="text-center text-sm font-semibold">สแกน QR Code เพื่อชำระเงิน</p>
+                <img src="${eventData.payment_qr_code_url || 'https://placehold.co/200x200?text=QR+Code'}" alt="Payment QR Code" class="mx-auto my-2 rounded-md shadow-sm w-48 h-48 object-contain bg-white border">
+                
+                <div class="text-center text-sm text-gray-700">
+                    <p><strong>ธนาคาร:</strong> ${eventData.payment_bank || '-'}</p>
+                    <p><strong>ชื่อบัญชี:</strong> ${eventData.payment_account_name || '-'}</p>
+                    <p><strong>เลขที่บัญชี:</strong> ${eventData.payment_account_number || '-'}</p>
+                </div>
+                
+                ${deadlineHtml}
+
+                <div class="border-t pt-4">
+                    <label for="payment_slip_${regId}" class="block text-sm font-medium text-gray-700 mb-2">อัปโหลดหลักฐานการโอนเงิน <span class="text-red-500">*</span></label>
+                    <input type="file" id="payment_slip_${regId}" name="payment_slip" required accept="image/jpeg,image/png,application/pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 hover:file:bg-gray-200 file:cursor-pointer">
+                    <p class="text-xs text-gray-500 mt-1">ไฟล์ JPG, PNG, PDF ขนาดไม่เกิน 5MB</p>
+                </div>
+
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition">
+                    <i class="fa-solid fa-check-circle mr-2"></i> ยืนยันการแจ้งโอน
+                </button>
+            </form>
+        `;
+        content.classList.remove('hidden');
+        modal.classList.remove('hidden');
+    }
+
+    // --- Modal function for LOGGED-IN users ---
+    function showPaymentModalLoggedIn(regId, regCode, regData) {
+        const modal = document.getElementById('message-box');
+        if (!modal) return;
+        
+        const title = document.getElementById('message-title');
+        const content = document.getElementById('message-content-container');
+        const text = document.getElementById('message-text');
+        
+        title.textContent = `แจ้งชำระเงิน: ${regCode}`;
+        text.classList.add('hidden');
+        
+        // [MODIFIED] Use total_amount from the regData object
+        const amount = parseFloat(regData.total_amount || 0);
+        const deadline = formatDeadline(regData.payment_deadline);
+        
+        let deadlineHtml = '';
+        if (deadline) {
+            deadlineHtml = `<p class="text-center text-red-600 font-semibold text-sm mb-4">
+                            กรุณาชำระเงินและแจ้งโอนภายในวันที่ ${deadline} น.
+                          </p>`;
+        }
+
+        content.innerHTML = `
+            <form id="payment-form-${regId}" action="actions/submit_payment.php" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <input type="hidden" name="registration_id" value="${regId}">
+                
+                <div class="w-full bg-blue-600 text-white p-4 rounded-lg text-center">
+                    <p class="text-sm">ยอดที่ต้องชำระ</p>
+                    <p class="text-3xl font-bold">${amount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท</p>
+                </div>
+                
+                <p class="text-center text-sm font-semibold">สแกน QR Code เพื่อชำระเงิน</p>
+                <img src="${regData.payment_qr_code_url || 'https://placehold.co/200x200?text=QR+Code'}" alt="Payment QR Code" class="mx-auto my-2 rounded-md shadow-sm w-48 h-48 object-contain bg-white border">
+                
+                <div class="text-center text-sm text-gray-700">
+                    <p><strong>ธนาคาร:</strong> ${regData.payment_bank || '-'}</p>
+                    <p><strong>ชื่อบัญชี:</strong> ${regData.payment_account_name || '-'}</p>
+                    <p><strong>เลขที่บัญชี:</strong> ${regData.payment_account_number || '-'}</p>
+                </div>
+                
+                ${deadlineHtml}
+
+                <div class="border-t pt-4">
+                    <label for="payment_slip_li_${regId}" class="block text-sm font-medium text-gray-700 mb-2">อัปโหลดหลักฐานการโอนเงิน <span class="text-red-500">*</span></label>
+                    <input type="file" id="payment_slip_li_${regId}" name="payment_slip" required accept="image/jpeg,image/png,application/pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 hover:file:bg-gray-200 file:cursor-pointer">
+                    <p class="text-xs text-gray-500 mt-1">ไฟล์ JPG, PNG, PDF ขนาดไม่เกิน 5MB</p>
+                </div>
+
+                <button type="submit" class="w-full bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition">
+                    <i class="fa-solid fa-check-circle mr-2"></i> ยืนยันการแจ้งโอน
+                </button>
+            </form>
+        `;
+        content.classList.remove('hidden');
+        modal.classList.remove('hidden');
+    }
+</script>

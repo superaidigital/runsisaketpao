@@ -6,7 +6,6 @@ $global_settings = get_global_settings($mysqli);
 ?>
         </main>
         
-        <!-- ส่วนท้ายเว็บไซต์ (Footer) -->
         <footer class="mt-10 bg-gray-800 text-white rounded-xl shadow-lg p-6 md:p-8">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm">
                  <div>
@@ -30,6 +29,7 @@ $global_settings = get_global_settings($mysqli);
                     <h4 class="text-lg font-semibold mb-3 border-b border-gray-700 pb-1">ลิงก์ด่วน</h4>
                     <ul class="space-y-2">
                         <li><a href="index.php?page=home" class="text-gray-300 hover:text-primary transition">หน้าหลักกิจกรรม</a></li>
+                        <li><a href="index.php?page=news" class="text-gray-300 hover:text-primary transition">ข่าวสารและประกาศ</a></li>
                         <li><a href="index.php?page=dashboard" class="text-gray-300 hover:text-primary transition">แดชบอร์ดผู้สมัคร</a></li>
                         <li><a href="index.php?page=search_runner" class="text-gray-300 hover:text-primary transition">ค้นหานักวิ่ง</a></li>
                     </ul>
@@ -64,20 +64,15 @@ $global_settings = get_global_settings($mysqli);
 
         <?php include 'message_box.php'; ?>
 
-        <!-- Image Gallery Lightbox Modal -->
         <div id="gallery-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[100]">
             <div class="relative w-full h-full flex items-center justify-center">
-                <!-- Close Button -->
                 <button onclick="closeGallery()" class="absolute top-2 right-4 text-white text-5xl font-bold z-10">&times;</button>
 
-                <!-- Main Image Display -->
                 <img id="gallery-image" src="" class="max-w-[90vw] max-h-[85vh] object-contain rounded-lg">
 
-                <!-- Prev/Next Buttons -->
                 <button onclick="prevGalleryImage()" class="absolute left-4 top-1/2 -translate-y-1/2 text-white bg-black/30 p-3 rounded-full text-2xl hover:bg-black/50 transition"><i class="fa-solid fa-chevron-left"></i></button>
                 <button onclick="nextGalleryImage()" class="absolute right-4 top-1/2 -translate-y-1/2 text-white bg-black/30 p-3 rounded-full text-2xl hover:bg-black/50 transition"><i class="fa-solid fa-chevron-right"></i></button>
 
-                <!-- Counter and Title -->
                 <div id="gallery-caption" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-white bg-black/50 px-4 py-2 rounded-lg text-center">
                     <p id="gallery-title" class="font-bold"></p>
                     <p id="gallery-counter" class="text-sm"></p>
@@ -86,9 +81,7 @@ $global_settings = get_global_settings($mysqli);
         </div>
 
 
-    </div> <!-- ปิด #app-container -->
-
-    <script>
+    </div> <script>
         // --- Centralized Modal/Lightbox Logic ---
         
         // --- Message Box ---
@@ -156,4 +149,3 @@ $global_settings = get_global_settings($mysqli);
     </script>
 </body>
 </html>
-

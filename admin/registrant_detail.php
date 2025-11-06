@@ -25,6 +25,7 @@ if (!isset($_GET['reg_id']) || !is_numeric($_GET['reg_id'])) {
 $reg_id = intval($_GET['reg_id']);
 
 // --- Fetch Registration Data (เพิ่ม e.start_date) ---
+// [MODIFIED] Added shipping_option, shipping_address, total_amount
 $stmt = $mysqli->prepare("
     SELECT
         r.*,
@@ -172,6 +173,17 @@ include 'partials/header.php';
                     </p>
                     <p><strong>ค่าสมัคร:</strong> <?= number_format($reg['price'], 2) ?> บาท</p>
                     <p><strong>ขนาดเสื้อ:</strong> <?= e($reg['shirt_size']) ?></p>
+                    
+                    <!-- [MODIFIED] Shipping Info Display -->
+                    <p class="font-bold"><strong>วิธีรับอุปกรณ์:</strong> <?= e($reg['shipping_option'] === 'delivery' ? 'จัดส่งทางไปรษณีย์' : 'รับเองหน้างาน') ?></p>
+                    <?php if ($reg['shipping_option'] === 'delivery'): ?>
+                    <p class="md:col-span-2"><strong>ที่อยู่จัดส่ง:</strong> <?= nl2br(e($reg['shipping_address'])) ?></p>
+                    <?php endif; ?>
+                    <p class="md:col-span-2 font-bold text-lg text-primary border-t pt-2 mt-2">
+                        <strong>ยอดชำระทั้งหมด:</strong> <?= number_format($reg['total_amount'], 2) ?> บาท
+                    </p>
+                    <!-- [END MODIFIED] -->
+
                  </div>
             </div>
         </div>
@@ -185,32 +197,41 @@ include 'partials/header.php';
                         <span class="mt-2 block text-sm text-blue-600 font-semibold">คลิกเพื่อดูภาพสลิปขนาดเต็ม</span>
                     </a>
                 <?php else: ?>
-                    <p class="text-center text-gray-500">ไม่มีข้อมูลสลิป</p>
+                    <p class="text-center text-gray-500">ไม่มีข้อมูลสลิป (อาจจะยังไม่ชำระเงิน)</p>
                 <?php endif; ?>
             </div>
 
             <div class="bg-white p-6 rounded-xl shadow-md">
                  <h2 class="text-xl font-bold mb-4 text-primary"><i class="fa-solid fa-cogs mr-2"></i>จัดการข้อมูล</h2>
                  <div class="space-y-4">
-                    <div>
-                        <label for="status" class="block text-sm font-medium text-gray-700">เปลี่ยนสถานะ</label>
-                        <select id="status" name="status" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500">
-                            <option value="รอตรวจสอบ" <?= $reg['status'] == 'รอตรวจสอบ' ? 'selected' : '' ?>>รอตรวจสอบ</option>
-                            <option value="ชำระเงินแล้ว" <?= $reg['status'] == 'ชำระเงินแล้ว' ? 'selected' : '' ?>>ชำระเงินแล้ว</option>
-                            <option value="รอชำระเงิน" <?= $reg['status'] == 'รอชำระเงิน' ? 'selected' : '' ?>>รอชำระเงิน</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="bib_number" class="block text-sm font-medium text-gray-700">เลข BIB</label>
-                        <input type="text" id="bib_number" name="bib_number" value="<?= e($reg['bib_number']) ?>" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="กำหนดอัตโนมัติเมื่อชำระเงิน">
-                    </div>
                      <div>
-                        <label for="corral" class="block text-sm font-medium text-gray-700">กลุ่มปล่อยตัว (Corral)</label>
-                        <input type="text" id="corral" name="corral" value="<?= e($reg['corral']) ?>" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="กำหนดอัตโนมัติเมื่อชำระเงิน">
-                    </div>
-                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg">
-                        <i class="fa-solid fa-save mr-2"></i> บันทึกข้อมูล
-                    </button>
+                         <label for="status" class="block text-sm font-medium text-gray-700">เปลี่ยนสถานะ</label>
+                         <select id="status" name="status" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500">
+                             <option value="รอชำระเงิน" <?= $reg['status'] == 'รอชำระเงิน' ? 'selected' : '' ?>>รอชำระเงิน</option>
+                             <option value="รอตรวจสอบ" <?= $reg['status'] == 'รอตรวจสอบ' ? 'selected' : '' ?>>รอตรวจสอบ</option>
+                             <option value="ชำระเงินแล้ว" <?= $reg['status'] == 'ชำระเงินแล้ว' ? 'selected' : '' ?>>ชำระเงินแล้ว</option>
+                         </select>
+                     </div>
+                     <div>
+                         <label for="bib_number" class="block text-sm font-medium text-gray-700">เลข BIB</label>
+                         <input type="text" id="bib_number" name="bib_number" value="<?= e($reg['bib_number']) ?>" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="กำหนดอัตโนมัติเมื่อชำระเงิน">
+                     </div>
+                      <div>
+                         <label for="corral" class="block text-sm font-medium text-gray-700">กลุ่มปล่อยตัว (Corral)</label>
+                         <input type="text" id="corral" name="corral" value="<?= e($reg['corral']) ?>" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="กำหนดอัตโนมัติเมื่อชำระเงิน">
+                     </div>
+
+                     <div>
+                         <label for="shipping_option" class="block text-sm font-medium text-gray-700">วิธีรับอุปกรณ์ (Race Kit)</label>
+                         <select id="shipping_option" name="shipping_option" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500">
+                             <option value="pickup" <?= $reg['shipping_option'] == 'pickup' ? 'selected' : '' ?>>รับเองหน้างาน</option>
+                             <option value="delivery" <?= $reg['shipping_option'] == 'delivery' ? 'selected' : '' ?>>จัดส่งทางไปรษณีย์</option>
+                         </select>
+                     </div>
+
+                     <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg">
+                         <i class="fa-solid fa-save mr-2"></i> บันทึกข้อมูล
+                     </button>
                  </div>
             </div>
         </div>
@@ -220,4 +241,3 @@ include 'partials/header.php';
 <?php
 include 'partials/footer.php';
 ?>
-

@@ -1,6 +1,6 @@
 <?php
 // actions/update_registration.php
-// สคริปต์สำหรับอัปเดตสถานะและ BIB ของผู้สมัคร (เวอร์ชันพัฒนา BIB อัตโนมัติ)
+// สคริปต์สำหรับอัปเดตสถานะ, BIB, Corral และ Shipping (เวอร์ชันแก้ไข)
 
 require_once '../config.php';
 require_once '../functions.php';
@@ -23,6 +23,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $new_status = isset($_POST['status']) ? e($_POST['status']) : '';
     $manual_bib_number = isset($_POST['bib_number']) ? e(trim($_POST['bib_number'])) : null;
     
+    // [NEW] Get shipping_option and manual corral from POST
+    $new_shipping_option = isset($_POST['shipping_option']) ? e($_POST['shipping_option']) : 'pickup'; // Default to pickup
+    $manual_corral = isset($_POST['corral']) ? e(trim($_POST['corral'])) : null;
+     
     // --- 2. Validation ---
     if ($reg_id === 0 || $event_id === 0 || empty($new_status)) {
         $_SESSION['update_error'] = "ข้อมูลที่ส่งมาไม่ถูกต้อง";
@@ -31,7 +35,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     // --- 3. Security Check: Verify Permission ---
-    // (Existing permission check code is good)
     if (!$is_super_admin) {
         $stmt_check = $mysqli->prepare("SELECT event_id FROM registrations WHERE id = ?");
         $stmt_check->bind_param("i", $reg_id);
@@ -57,7 +60,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt_current_reg->close();
 
         $bib_to_update = $manual_bib_number;
-        $corral_to_update = null;
+        
+        // [MODIFIED] Default corral to the manually submitted value
+        $corral_to_update = $manual_corral;
 
         // --- [CORE LOGIC] AUTO-ASSIGN BIB and CORRAL ---
         // This block runs ONLY when status is changed to 'Paid' AND no BIB is assigned yet.
@@ -83,6 +88,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     if (is_array($corrals)) {
                         foreach ($corrals as $corral) {
                             if ($next_bib_num >= $corral['from_bib'] && $next_bib_num <= $corral['to_bib']) {
+                                // Auto-assignment overwrites manual input if triggered
                                 $corral_to_update = $corral['name'];
                                 break;
                             }
@@ -102,9 +108,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // --- 5. Update the registration record ---
         $stmt_update_reg = $mysqli->prepare(
-            "UPDATE registrations SET status = ?, bib_number = ?, corral = ? WHERE id = ?"
+            // [MODIFIED] Added shipping_option to the update query
+            "UPDATE registrations SET status = ?, bib_number = ?, corral = ?, shipping_option = ? WHERE id = ?"
         );
-        $stmt_update_reg->bind_param("sssi", $new_status, $bib_to_update, $corral_to_update, $reg_id);
+        // [MODIFIED] Changed type string from "sssi" to "ssssi" and added $new_shipping_option
+        $stmt_update_reg->bind_param("ssssi", $new_status, $bib_to_update, $corral_to_update, $new_shipping_option, $reg_id);
         
         if (!$stmt_update_reg->execute()) {
             throw new Exception("Database update for registration failed.");
@@ -131,4 +139,3 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     exit;
 }
 ?>
-

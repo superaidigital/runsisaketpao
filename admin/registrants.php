@@ -94,7 +94,8 @@ if ($registrants_stmt === false) {
      die("Prepare failed for main query: (" . $mysqli->errno . ") " . $mysqli->error);
 }
 // *** ใช้ $types_main และ $params_main สำหรับ bind_param ของ main query ***
-$registrants_stmt->bind_param($types_main, ...$params_main); // บรรทัด 100 (ตาม error)
+// [FIXED] Removed confusing comment from this line
+$registrants_stmt->bind_param($types_main, ...$params_main);
 $registrants_stmt->execute();
 $registrants = $registrants_stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 $registrants_stmt->close();

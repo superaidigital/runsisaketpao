@@ -33,10 +33,28 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['id']) && isset($_GET['ac
             try {
                 // You should also delete files associated with the event from the '/uploads' directory
                 // This part is complex and should be handled with care. For now, we focus on DB records.
-                $mysqli->query("DELETE FROM schedules WHERE event_id = $event_id");
-                $mysqli->query("DELETE FROM event_images WHERE event_id = $event_id");
-                $mysqli->query("DELETE FROM distances WHERE event_id = $event_id");
-                $mysqli->query("DELETE FROM events WHERE id = $event_id");
+
+                // [FIXED] Use prepared statements for all delete operations
+                $stmt_schedules = $mysqli->prepare("DELETE FROM schedules WHERE event_id = ?");
+                $stmt_schedules->bind_param("i", $event_id);
+                $stmt_schedules->execute();
+                $stmt_schedules->close();
+
+                $stmt_images = $mysqli->prepare("DELETE FROM event_images WHERE event_id = ?");
+                $stmt_images->bind_param("i", $event_id);
+                $stmt_images->execute();
+                $stmt_images->close();
+
+                $stmt_distances = $mysqli->prepare("DELETE FROM distances WHERE event_id = ?");
+                $stmt_distances->bind_param("i", $event_id);
+                $stmt_distances->execute();
+                $stmt_distances->close();
+
+                $stmt_events = $mysqli->prepare("DELETE FROM events WHERE id = ?");
+                $stmt_events->bind_param("i", $event_id);
+                $stmt_events->execute();
+                $stmt_events->close();
+
                 $mysqli->commit();
                 $_SESSION['update_success'] = "ลบกิจกรรมสำเร็จแล้ว";
             } catch (Exception $e) {
@@ -68,4 +86,3 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['id']) && isset($_GET['ac
 header('Location: ../admin/index.php');
 exit;
 ?>
-

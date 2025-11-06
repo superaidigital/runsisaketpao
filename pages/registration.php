@@ -1,6 +1,6 @@
 <?php
 // pages/registration.php
-// Registration form page for an event (Fully Upgraded Version)
+// Registration form page for an event (Fully Upgraded Version + Shipping)
 
 // --- 1. Validate and get Event Code ---
 if (!isset($_GET['event_code']) || empty($_GET['event_code'])) {
@@ -10,7 +10,8 @@ if (!isset($_GET['event_code']) || empty($_GET['event_code'])) {
 $event_code = $_GET['event_code'];
 
 // --- 2. Fetch event and distance data ---
-$event_stmt = $mysqli->prepare("SELECT id, name, is_registration_open, payment_bank, payment_account_name, payment_account_number, payment_qr_code_url, start_date FROM events WHERE event_code = ? LIMIT 1");
+// [MODIFIED] Added enable_shipping, shipping_cost, payment_deadline
+$event_stmt = $mysqli->prepare("SELECT id, name, is_registration_open, payment_bank, payment_account_name, payment_account_number, payment_qr_code_url, start_date, enable_shipping, shipping_cost, payment_deadline FROM events WHERE event_code = ? LIMIT 1");
 $event_stmt->bind_param("s", $event_code);
 $event_stmt->execute();
 $event_result = $event_stmt->get_result();
@@ -41,7 +42,8 @@ $master_genders = $mysqli->query("SELECT * FROM master_genders ORDER BY id ASC")
 $logged_in_runner_data = null;
 if (isset($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
-    $user_stmt = $mysqli->prepare("SELECT title, first_name, last_name, gender, birth_date, email, phone, line_id, thai_id, emergency_contact_name, emergency_contact_phone, disease, disease_detail FROM users WHERE id = ?");
+    // [MODIFIED] Added address to pre-fill shipping
+    $user_stmt = $mysqli->prepare("SELECT title, first_name, last_name, gender, birth_date, email, phone, line_id, thai_id, emergency_contact_name, emergency_contact_phone, disease, disease_detail, address FROM users WHERE id = ?");
     $user_stmt->bind_param("i", $user_id);
     $user_stmt->execute();
     $result = $user_stmt->get_result();
@@ -115,7 +117,7 @@ function renderProgressBar() {
     const registrationSteps = [
         { name: 'เลือกระยะทาง' },
         { name: 'กรอกข้อมูลส่วนตัว' },
-        { name: 'สรุปและชำระเงิน' }
+        { name: 'สรุปและยืนยัน' }
     ];
     const container = document.getElementById('progress-bar-container');
     if (!container) return;
@@ -127,6 +129,21 @@ function renderProgressBar() {
             <div class="bg-primary h-2.5 rounded-full transition-all duration-500" style="width: ${((currentStep - 1) / (totalSteps - 1)) * 100}%"></div>
         </div>
     `;
+}
+
+// [NEW] Handle shipping option change
+function updateShippingOption(radio) {
+    const addressContainer = document.getElementById('shipping-address-container');
+    const addressTextarea = document.getElementById('shipping_address');
+    if (!addressContainer || !addressTextarea) return;
+
+    if (radio.value === 'จัดส่ง') {
+        addressContainer.classList.remove('hidden');
+        addressTextarea.required = true;
+    } else {
+        addressContainer.classList.add('hidden');
+        addressTextarea.required = false;
+    }
 }
 
 function handleDiseaseChange(event) {
@@ -145,8 +162,15 @@ function handleDiseaseChange(event) {
 
 function attachEventListeners() {
     if (currentStep === 2) {
+        // Attach disease radio listeners
         const diseaseRadios = document.querySelectorAll('input[name="disease"]');
         diseaseRadios.forEach(radio => radio.addEventListener('change', handleDiseaseChange));
+        
+        // Attach shipping radio listeners
+        const shippingRadios = document.querySelectorAll('input[name="shipping_option"]');
+        shippingRadios.forEach(radio => radio.addEventListener('change', () => updateShippingOption(radio)));
+
+        // Attach Thai ID validator
         const thaiIdInput = document.getElementById('thai_id');
         const thaiIdError = document.getElementById('thai-id-error');
         if (thaiIdInput && thaiIdError) {
@@ -166,9 +190,14 @@ function renderCurrentStep() {
     if (!content || !prevBtn || !nextBtn) return;
     content.innerHTML = '';
     prevBtn.style.display = currentStep > 1 ? 'inline-block' : 'none';
+    
+    // [MODIFIED] Check if pay later is enabled
+    const payLaterEnabled = currentEvent.payment_deadline != null;
+    
     nextBtn.innerHTML = currentStep === totalSteps
-        ? `<i class="fa-solid fa-check-circle mr-2"></i> ยืนยันการสมัคร`
+        ? (payLaterEnabled ? `<i class="fa-solid fa-check-circle mr-2"></i> ยืนยันการสมัคร (ยังไม่ชำระเงิน)` : `<i class="fa-solid fa-check-circle mr-2"></i> ยืนยันการสมัคร`)
         : `ถัดไป <i class="fa-solid fa-chevron-right ml-2"></i>`;
+    
     nextBtn.disabled = false;
 
     if (currentStep === 1) {
@@ -193,6 +222,40 @@ function renderCurrentStep() {
         const titleOptions = masterTitles.map(t => `<option value="${e(t.name)}" ${userInfo.title === t.name ? 'selected' : ''}>${e(t.name)}</option>`).join('');
         const shirtSizeOptions = masterShirtSizes.map(s => `<option value="${e(s.name)}" ${userInfo.shirt_size === s.name ? 'selected' : ''}>${e(s.name)} ${e(s.description)}</option>`).join('');
         const genderOptions = masterGenders.map(g => `<option value="${e(g.name)}" ${userInfo.gender === g.name ? 'selected' : ''}>${e(g.name)}</option>`).join('');
+
+        // [NEW] Shipping HTML
+        let shippingHtml = '';
+        if (currentEvent.enable_shipping == 1) {
+            const shippingCost = parseFloat(currentEvent.shipping_cost || 0);
+            // Check if shipping_option was previously selected, default to 'รับเอง'
+            const isShippingSelected = getUserInfoValue('shipping_option') === 'จัดส่ง';
+            const isSelfPickupSelected = !isShippingSelected; // Default
+
+            shippingHtml = `
+                <div class="border-t pt-4">
+                    <h4 class="text-md font-semibold text-gray-800 mb-2">เลือกวิธีรับอุปกรณ์ (Race Kit)</h4>
+                    <div class="space-y-3">
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-blue-50">
+                            <input type="radio" name="shipping_option" value="รับเอง" class="h-4 w-4 text-primary" ${isSelfPickupSelected ? 'checked' : ''}>
+                            <span class="ml-3 font-medium text-gray-900">รับด้วยตนเอง (หน้างาน)</span>
+                            <span class="ml-auto font-bold text-primary">ฟรี</span>
+                        </label>
+                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-blue-50">
+                            <input type="radio" name="shipping_option" value="จัดส่ง" class="h-4 w-4 text-primary" ${isShippingSelected ? 'checked' : ''}>
+                            <span class="ml-3 font-medium text-gray-900">จัดส่งทางไปรษณีย์</span>
+                            <span class="ml-auto font-bold text-primary">+${shippingCost.toLocaleString('th-TH')} บาท</span>
+                        </label>
+                    </div>
+                    <div id="shipping-address-container" class="mt-4 ${isShippingSelected ? '' : 'hidden'}">
+                        <label for="shipping_address" class="block text-sm font-medium text-gray-700 mb-1">ที่อยู่สำหรับจัดส่ง <span class="text-red-500">*</span></label>
+                        <textarea id="shipping_address" name="shipping_address" rows="4" class="w-full p-2 border border-gray-300 rounded-md shadow-sm" placeholder="บ้านเลขที่, ถนน, ตำบล/แขวง, อำเภอ/เขต, จังหวัด, รหัสไปรษณีย์">${e(getUserInfoValue('shipping_address') || getUserInfoValue('address'))}</textarea>
+                    </div>
+                </div>
+            `;
+        } else {
+             // If shipping is disabled, force 'รับเอง'
+             shippingHtml = `<input type="hidden" name="shipping_option" value="รับเอง">`;
+        }
 
         content.innerHTML = `
             <h3 class="text-xl font-semibold mb-4">2. ข้อมูลส่วนตัวและเสื้อ (ระยะทาง: ${e(selectedDistance?.name)})</h3>
@@ -240,43 +303,78 @@ function renderCurrentStep() {
                     </div>
                 </div>
                 <div><label for="shirt_size" class="block text-sm font-medium text-gray-700 mb-1">ไซส์เสื้อ <span class="text-red-500">*</span></label><select id="shirt_size" name="shirt_size" required class="w-full p-2 border border-gray-300 rounded-md shadow-sm"><option value="">-- กรุณาเลือก --</option>${shirtSizeOptions}</select></div>
+                
+                <!-- [NEW] Shipping HTML goes here -->
+                ${shippingHtml}
             </div>
         `;
     } else if (currentStep === 3) {
         const selectedDistance = distances.find(d => d.id == registrationData.distance_id);
         const userInfo = registrationData.userInfo;
         const getUserInfoValueSummary = (key) => e(userInfo?.[key] || '-');
+        
+        // [NEW] Calculate Total Price
+        const racePrice = parseFloat(selectedDistance?.price || 0);
+        const shippingCost = (userInfo.shipping_option === 'จัดส่ง' && currentEvent.enable_shipping == 1) ? parseFloat(currentEvent.shipping_cost || 0) : 0;
+        const totalPrice = racePrice + shippingCost;
+        registrationData.total_amount = totalPrice; // Store total for submission
+
+        let summaryHtml = `
+            <p><strong>ชื่อ-สกุล:</strong> ${getUserInfoValueSummary('title')} ${getUserInfoValueSummary('first_name')} ${getUserInfoValueSummary('last_name')}</p>
+            <p><strong>อีเมล:</strong> ${getUserInfoValueSummary('email')}</p>
+            <p><strong>โทรศัพท์:</strong> ${getUserInfoValueSummary('phone')}</p>
+            <hr class="my-2 border-gray-300">
+            <p><strong>ระยะทาง:</strong> ${e(selectedDistance?.name)} (${racePrice.toLocaleString('th-TH')} บาท)</p>
+            <p><strong>ขนาดเสื้อ:</strong> ${e(registrationData.shirt_size)}</p>
+            <p><strong>การรับอุปกรณ์:</strong> ${getUserInfoValueSummary('shipping_option')} (${shippingCost.toLocaleString('th-TH')} บาท)</p>
+        `;
+        
+        if (userInfo.shipping_option === 'จัดส่ง') {
+            summaryHtml += `<p class="pl-4"><strong>ที่อยู่จัดส่ง:</strong> ${getUserInfoValueSummary('shipping_address')}</p>`;
+        }
+        
+        // [MODIFIED] Check if pay later is enabled
+        const payLaterEnabled = currentEvent.payment_deadline != null;
+        let paymentHtml = '';
+        
+        if (payLaterEnabled) {
+            paymentHtml = `
+                <div class="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-md">
+                    <p class="font-bold"><i class="fa-solid fa-clock-rotate-left mr-2"></i>ยืนยันการสมัคร (Pay Later)</p>
+                    <p class="text-sm">คุณสามารถยืนยันการสมัครก่อน และกลับมาชำระเงินได้ในภายหลัง</p>
+                </div>
+            `;
+        } else {
+             // If pay later is disabled, show payment info
+            paymentHtml = `
+                <h3 class="text-xl font-semibold my-4"><i class="fa-solid fa-money-check-dollar mr-2"></i> การชำระเงิน</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    <div class="bg-white p-4 rounded-lg border text-center shadow-sm">
+                        <p class="font-semibold text-gray-700 mb-2">สแกน QR Code เพื่อชำระเงิน</p>
+                        <img src="${e(currentEvent.payment_qr_code_url) || 'https://placehold.co/160x160?text=QR+Code'}" alt="Payment QR Code" class="mx-auto my-2 rounded-md shadow-sm w-40 h-40 object-contain bg-white">
+                    </div>
+                    <div class="space-y-4">
+                        <div class="bg-white p-4 rounded-lg border shadow-sm">
+                            <label for="payment_slip" class="block text-sm font-medium text-gray-700 mb-2">อัปโหลดหลักฐาน <span class="text-red-500">*</span></label>
+                            <input type="file" id="payment_slip" name="payment_slip" required accept="image/jpeg,image/png,application/pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 hover:file:bg-gray-200 file:cursor-pointer">
+                             <p class="text-xs text-gray-500 mt-1">ไฟล์ JPG, PNG, PDF ขนาดไม่เกิน 5MB</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         content.innerHTML = `
              <h3 class="text-xl font-semibold mb-4">3. สรุปข้อมูลการสมัคร</h3>
              <div class="p-6 bg-gray-50 rounded-xl border border-gray-200 mb-6 space-y-2 text-gray-800 text-sm">
-                <p><strong>ชื่อ-สกุล:</strong> ${getUserInfoValueSummary('title')} ${getUserInfoValueSummary('first_name')} ${getUserInfoValueSummary('last_name')}</p>
-                <p><strong>เพศ:</strong> ${getUserInfoValueSummary('gender')}</p>
-                <p><strong>อีเมล:</strong> ${getUserInfoValueSummary('email')}</p>
-                <p><strong>โทรศัพท์:</strong> ${getUserInfoValueSummary('phone')}</p>
-                <hr class="my-2 border-gray-300">
-                <p><strong>ระยะทาง:</strong> ${e(selectedDistance?.name)}</p>
-                <p><strong>ขนาดเสื้อ:</strong> ${e(registrationData.shirt_size)}</p>
-                <p><strong>ข้อมูลสุขภาพ:</strong> ${userInfo.disease === 'มีโรคประจำตัว' ? getUserInfoValueSummary('disease_detail') : 'ไม่มีโรคประจำตัว'}</p>
-                <p><strong>ผู้ติดต่อฉุกเฉิน:</strong> ${getUserInfoValueSummary('emergency_contact_name')} (${getUserInfoValueSummary('emergency_contact_phone')})</p>
+                ${summaryHtml}
             </div>
-            <h3 class="text-xl font-semibold my-4"><i class="fa-solid fa-money-check-dollar mr-2"></i> การชำระเงิน</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                <div class="bg-white p-4 rounded-lg border text-center shadow-sm">
-                    <p class="font-semibold text-gray-700 mb-2">สแกน QR Code เพื่อชำระเงิน</p>
-                    <img src="${e(currentEvent.payment_qr_code_url) || 'https://placehold.co/160x160?text=QR+Code'}" alt="Payment QR Code" class="mx-auto my-2 rounded-md shadow-sm w-40 h-40 object-contain bg-white">
-                </div>
-                <div class="space-y-4">
-                    <div class="bg-white p-4 rounded-lg border shadow-sm">
-                        <label for="payment_slip" class="block text-sm font-medium text-gray-700 mb-2">อัปโหลดหลักฐาน <span class="text-red-500">*</span></label>
-                        <input type="file" id="payment_slip" name="payment_slip" required accept="image/jpeg,image/png,application/pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 hover:file:bg-gray-200 file:cursor-pointer">
-                         <p class="text-xs text-gray-500 mt-1">ไฟล์ JPG, PNG, PDF ขนาดไม่เกิน 5MB</p>
-                    </div>
-                     <div class="bg-primary text-white p-4 rounded-lg text-center shadow-lg">
-                        <p class="text-lg">ยอดชำระเงินทั้งหมด</p>
-                        <p class="text-4xl font-extrabold">${parseFloat(selectedDistance?.price || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท</p>
-                    </div>
-                </div>
+            
+            ${paymentHtml}
+            
+            <div class="bg-primary text-white p-4 rounded-lg text-center shadow-lg mt-6">
+                <p class="text-lg">ยอดชำระเงินทั้งหมด</p>
+                <p class="text-4xl font-extrabold">${totalPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} บาท</p>
             </div>
         `;
     }
@@ -321,13 +419,37 @@ function nextStep() {
     } else if (currentStep === 2) {
         const elements = form.elements;
         const requiredFields = ['title', 'first_name', 'last_name', 'gender', 'birth_date', 'thai_id', 'email', 'phone', 'emergency_contact_name', 'emergency_contact_phone', 'shirt_size'];
+        
+        // [NEW] Add shipping fields to validation if enabled
+        if (currentEvent.enable_shipping == 1) {
+            // Find the checked shipping_option radio
+            const shippingOption = form.querySelector('input[name="shipping_option"]:checked');
+            if (!shippingOption) {
+                showMessage('ข้อมูลไม่ครบถ้วน', 'กรุณาเลือกวิธีรับอุปกรณ์');
+                return;
+            }
+            if (shippingOption.value === 'จัดส่ง') {
+                requiredFields.push('shipping_address');
+            }
+        }
+
         for (const fieldName of requiredFields) {
-            if (!elements[fieldName] || !elements[fieldName].value.trim()) {
-                showMessage('ข้อมูลไม่ครบถ้วน', `กรุณากรอกข้อมูล: ${elements[fieldName].labels[0].innerText.replace('*','').trim()}`);
-                elements[fieldName].focus();
+            const el = elements[fieldName];
+            if (!el) continue; // Skip if element doesn't exist
+
+            if ((el.type === 'radio' && !form.querySelector(`input[name="${fieldName}"]:checked`)) ||
+                (el.type !== 'radio' && !el.value.trim())) {
+                
+                let labelText = fieldName;
+                const label = el.labels?.[0] || document.querySelector(`label[for="${fieldName}"]`);
+                if(label) labelText = label.innerText.replace('*','').trim();
+
+                showMessage('ข้อมูลไม่ครบถ้วน', `กรุณากรอกข้อมูล: ${labelText}`);
+                el.focus();
                 return;
             }
         }
+        
         if (elements['disease'].value === 'มีโรคประจำตัว' && !elements['disease_detail'].value.trim()) {
             showMessage('ข้อมูลไม่ครบถ้วน', `กรุณากรอกข้อมูล: โปรดระบุโรคประจำตัว`);
             elements['disease_detail'].focus();
@@ -370,16 +492,22 @@ function prevStep() {
 
 // --- 4. Final Submission ---
 function completeRegistration() {
-    const slipInput = document.getElementById('payment_slip');
-    if (!slipInput || !slipInput.files || slipInput.files.length === 0) {
-        showMessage('ข้อมูลไม่ครบถ้วน', 'กรุณาอัปโหลดหลักฐานการชำระเงิน');
-        return;
-    }
-    const slipFile = slipInput.files[0];
-    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-    if (!allowedTypes.includes(slipFile.type) || slipFile.size > 5 * 1024 * 1024) {
-        showMessage('ไฟล์ไม่ถูกต้อง', 'กรุณาอัปโหลดไฟล์ JPG, PNG, หรือ PDF ขนาดไม่เกิน 5MB');
-        return;
+    // [MODIFIED] Check if pay later is enabled. If not, validate slip.
+    const payLaterEnabled = currentEvent.payment_deadline != null;
+    let slipFile = null;
+
+    if (!payLaterEnabled) {
+        const slipInput = document.getElementById('payment_slip');
+        if (!slipInput || !slipInput.files || slipInput.files.length === 0) {
+            showMessage('ข้อมูลไม่ครบถ้วน', 'กรุณาอัปโหลดหลักฐานการชำระเงิน');
+            return;
+        }
+        slipFile = slipInput.files[0];
+        const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+        if (!allowedTypes.includes(slipFile.type) || slipFile.size > 5 * 1024 * 1024) {
+            showMessage('ไฟล์ไม่ถูกต้อง', 'กรุณาอัปโหลดไฟล์ JPG, PNG, หรือ PDF ขนาดไม่เกิน 5MB');
+            return;
+        }
     }
 
     const finalFormData = new FormData();
@@ -387,12 +515,25 @@ function completeRegistration() {
     finalFormData.append('event_code', eventCode);
     finalFormData.append('distance_id', registrationData.distance_id);
     finalFormData.append('shirt_size', registrationData.shirt_size);
-    finalFormData.append('payment_slip', slipFile);
     finalFormData.append('distance_name', registrationData.distance_name);
+    finalFormData.append('total_amount', registrationData.total_amount); // [NEW] Send total
+    
+    // [NEW] Add shipping option and address
+    finalFormData.append('shipping_option', registrationData.userInfo.shipping_option || 'รับเอง');
+    if (registrationData.userInfo.shipping_option === 'จัดส่ง') {
+        finalFormData.append('shipping_address', registrationData.userInfo.shipping_address || '');
+    }
+
+    if (slipFile) {
+        finalFormData.append('payment_slip', slipFile);
+    }
 
     if (registrationData.userInfo) {
         for (const key in registrationData.userInfo) {
-            finalFormData.append(key, registrationData.userInfo[key]);
+            // Avoid appending fields we already handle separately
+            if (key !== 'payment_slip' && key !== 'shipping_option' && key !== 'shipping_address') {
+                finalFormData.append(key, registrationData.userInfo[key]);
+            }
         }
     } else {
         showMessage('เกิดข้อผิดพลาด', 'ข้อมูลผู้สมัครไม่ครบถ้วน กรุณาลองย้อนกลับไปขั้นตอนก่อนหน้า');
@@ -424,14 +565,14 @@ function completeRegistration() {
             window.location.href = finalRedirectUrl;
         } else {
             nextBtn.disabled = false;
-            nextBtn.innerHTML = `<i class="fa-solid fa-check-circle mr-2"></i> ยืนยันการสมัคร`;
+            nextBtn.innerHTML = payLaterEnabled ? `<i class="fa-solid fa-check-circle mr-2"></i> ยืนยันการสมัคร (ยังไม่ชำระเงิน)` : `<i class="fa-solid fa-check-circle mr-2"></i> ยืนยันการสมัคร`;
             showMessage('เกิดข้อผิดพลาด', data.message || 'ไม่สามารถบันทึกข้อมูลได้');
         }
     })
     .catch(error => {
         console.error('Error during fetch operation:', error);
         nextBtn.disabled = false;
-        nextBtn.innerHTML = `<i class="fa-solid fa-check-circle mr-2"></i> ยืนยันการสมัคร`;
+        nextBtn.innerHTML = payLaterEnabled ? `<i class="fa-solid fa-check-circle mr-2"></i> ยืนยันการสมัคร (ยังไม่ชำระเงิน)` : `<i class="fa-solid fa-check-circle mr-2"></i> ยืนยันการสมัคร`;
         showMessage('การเชื่อมต่อล้มเหลว', 'เกิดข้อผิดพลาดในการส่งข้อมูล: ' + error.message);
     });
 }
@@ -440,6 +581,13 @@ function completeRegistration() {
 document.addEventListener('DOMContentLoaded', () => {
     if (loggedInRunner) {
          registrationData.userInfo = { ...loggedInRunner };
+         // [NEW] Pre-fill address for shipping if it exists
+         if (loggedInRunner.address) {
+            // Only prefill shipping_address if it's not already set (e.g., from coming back from step 3)
+            if (!registrationData.userInfo.shipping_address) {
+                registrationData.userInfo.shipping_address = loggedInRunner.address;
+            }
+         }
          if (registrationData.shirt_size) {
             registrationData.userInfo.shirt_size = registrationData.shirt_size;
          }
@@ -447,4 +595,3 @@ document.addEventListener('DOMContentLoaded', () => {
     renderCurrentStep();
 });
 </script>
-

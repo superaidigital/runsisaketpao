@@ -1,6 +1,6 @@
 <?php
 // actions/update_event_settings.php
-// สคริปต์สำหรับอัปเดตการตั้งค่ากิจกรรม (เวอร์ชันสมบูรณ์ + BIB + Corrals)
+// สคริปต์สำหรับอัปเดตการตั้งค่ากิจกรรม (เวอร์ชันสมบูรณ์ + BIB + Corrals + Shipping)
 
 require_once '../config.php';
 require_once '../functions.php';
@@ -24,6 +24,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $slogan = isset($_POST['slogan']) ? e($_POST['slogan']) : '';
     $start_date = isset($_POST['start_date']) ? e($_POST['start_date']) : '';
     $is_registration_open = isset($_POST['is_registration_open']) ? intval($_POST['is_registration_open']) : 0;
+    $payment_deadline = !empty($_POST['payment_deadline']) ? e($_POST['payment_deadline']) : null;
     $theme_color = isset($_POST['theme_color']) ? e($_POST['theme_color']) : 'indigo';
     $color_code = isset($_POST['color_code']) ? e($_POST['color_code']) : '#4f46e5';
 
@@ -32,10 +33,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $contact_person_name = isset($_POST['contact_person_name']) ? e($_POST['contact_person_name']) : '';
     $contact_person_phone = isset($_POST['contact_person_phone']) ? e($_POST['contact_person_phone']) : '';
 
-    // Payment Info
+    // Payment & Shipping Info
     $payment_bank = isset($_POST['payment_bank']) ? e($_POST['payment_bank']) : '';
     $payment_account_name = isset($_POST['payment_account_name']) ? e($_POST['payment_account_name']) : '';
     $payment_account_number = isset($_POST['payment_account_number']) ? e($_POST['payment_account_number']) : '';
+    $enable_shipping = isset($_POST['enable_shipping']) ? intval($_POST['enable_shipping']) : 0; // [NEW]
+    $shipping_cost = isset($_POST['shipping_cost']) ? floatval($_POST['shipping_cost']) : 0.00; // [NEW]
+
 
     // Content
     $description = isset($_POST['description']) ? $_POST['description'] : null;
@@ -49,12 +53,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $posted_distances = isset($_POST['distances']) ? $_POST['distances'] : [];
     $images_to_delete = isset($_POST['delete_images']) ? $_POST['delete_images'] : [];
     
-    // [NEW] BIB Settings
+    // BIB Settings
     $bib_prefix = isset($_POST['bib_prefix']) ? e(trim($_POST['bib_prefix'])) : null;
     $bib_start_number = isset($_POST['bib_start_number']) ? intval($_POST['bib_start_number']) : 1;
     $bib_padding = isset($_POST['bib_padding']) ? intval($_POST['bib_padding']) : 4;
 
-    // [NEW] Corral Settings
+    // Corral Settings
     $corrals = isset($_POST['corrals']) ? $_POST['corrals'] : [];
     $corrals_json = !empty($corrals) ? json_encode(array_values($corrals), JSON_UNESCAPED_UNICODE) : null;
 
@@ -130,20 +134,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             "theme_color = ?", "color_code = ?",
             "organizer = ?", "contact_person_name = ?", "contact_person_phone = ?",
             "payment_bank = ?", "payment_account_name = ?", "payment_account_number = ?",
+            "enable_shipping = ?", "shipping_cost = ?", // [NEW]
             "description = ?", "awards_description = ?",
             "map_embed_url = ?", "map_direction_url = ?",
-            "bib_prefix = ?", "bib_start_number = ?", "bib_padding = ?", "corral_settings = ?"
+            "bib_prefix = ?", "bib_start_number = ?", "bib_padding = ?", "corral_settings = ?",
+            "payment_deadline = ?"
         ];
         $params = [
             $name, $slogan, $start_date, $is_registration_open,
             $theme_color, $color_code,
             $organizer, $contact_person_name, $contact_person_phone,
             $payment_bank, $payment_account_name, $payment_account_number,
+            $enable_shipping, $shipping_cost, // [NEW]
             $description, $awards_description,
             $map_embed_url, $map_direction_url,
-            $bib_prefix, $bib_start_number, $bib_padding, $corrals_json
+            $bib_prefix, $bib_start_number, $bib_padding, $corrals_json,
+            $payment_deadline
         ];
-        $types = "sssisssssssssssssiis";
+        $types = "sssissssssssidssssiiss"; // [NEW] Added i (enable_shipping) and d (shipping_cost)
+        $types .= "s"; // For payment_deadline (string/null)
 
         if ($logo_path_to_update) { $sql_set_parts[] = "organizer_logo_url = ?"; $params[] = $logo_path_to_update; $types .= "s"; }
         if ($qr_code_path_to_update) { $sql_set_parts[] = "payment_qr_code_url = ?"; $params[] = $qr_code_path_to_update; $types .= "s"; }
@@ -269,4 +278,3 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     exit;
 }
 ?>
-

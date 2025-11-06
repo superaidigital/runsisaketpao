@@ -116,6 +116,11 @@ include 'partials/header.php';
                 <label for="color_code" class="block text-sm font-medium text-gray-700">รหัสสีหลัก (Color Picker)</label>
                 <input type="color" id="color_code" name="color_code" value="<?= e($event['color_code'] ?? '#4f46e5') ?>" class="mt-1 block w-full h-10 border border-gray-300 rounded-lg shadow-sm p-1 cursor-pointer">
             </div>
+            <div class="md:col-span-2">
+                <label for="payment_deadline" class="block text-sm font-medium text-gray-700">วันหมดเขตชำระเงิน (Pay Later Deadline)</label>
+                <input type="datetime-local" id="payment_deadline" name="payment_deadline" value="<?= e($event['payment_deadline'] ? date('Y-m-d\TH:i', strtotime($event['payment_deadline'])) : '') ?>" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2">
+                <p class="text-xs text-gray-500 mt-1">ปล่อยว่าง ถ้าต้องการให้ชำระเงินทันที (ปิดระบบ Pay Later)</p>
+            </div>
         </div>
     </div>
 
@@ -155,7 +160,7 @@ include 'partials/header.php';
     </div>
 
     <div>
-        <h2 class="text-xl font-bold text-primary border-b pb-2 mb-4">3. ข้อมูลการชำระเงิน</h2>
+        <h2 class="text-xl font-bold text-primary border-b pb-2 mb-4">3. ข้อมูลการชำระเงินและการจัดส่ง</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-4">
                  <div>
@@ -170,6 +175,21 @@ include 'partials/header.php';
                     <label for="payment_account_number" class="block text-sm font-medium text-gray-700">เลขที่บัญชี</label>
                     <input type="text" id="payment_account_number" name="payment_account_number" value="<?= e($event['payment_account_number']) ?>" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2">
                 </div>
+                
+                <!-- [NEW] Shipping Options -->
+                <div>
+                    <label for="enable_shipping" class="block text-sm font-medium text-gray-700">เปิดใช้งานการจัดส่ง</label>
+                    <select id="enable_shipping" name="enable_shipping" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2">
+                        <option value="0" <?= !$event['enable_shipping'] ? 'selected' : '' ?>>ปิดใช้งาน (รับหน้างานเท่านั้น)</option>
+                        <option value="1" <?= $event['enable_shipping'] ? 'selected' : '' ?>>เปิดใช้งาน (มีค่าจัดส่ง)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="shipping_cost" class="block text-sm font-medium text-gray-700">ค่าจัดส่ง (บาท)</label>
+                    <input type="number" step="0.01" id="shipping_cost" name="shipping_cost" value="<?= e($event['shipping_cost'] ?? '0.00') ?>" class="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm p-2">
+                </div>
+                <!-- [END NEW] Shipping Options -->
+
             </div>
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-700">QR Code สำหรับชำระเงิน</label>
@@ -467,4 +487,3 @@ include 'partials/header.php';
 <?php
 include 'partials/footer.php';
 ?>
-

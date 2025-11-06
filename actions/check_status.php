@@ -1,6 +1,6 @@
 <?php
 // actions/check_status.php
-// สคริปต์สำหรับตรวจสอบสถานะการสมัครจากฐานข้อมูล
+// สคริปต์สำหรับตรวจสอบสถานะการสมัครจากฐานข้อมูล (เวอร์ชันอัปเกรด)
 
 require_once '../config.php';
 require_once '../functions.php';
@@ -15,11 +15,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
-    // เตรียมคำสั่ง SQL เพื่อค้นหาข้อมูลจากทั้ง thai_id และ registration_code
+    // [MODIFIED] อัปเดต query ให้ดึง r.id (reg_id), total_amount, และข้อมูล event สำหรับการชำระเงิน
     $stmt = $mysqli->prepare("
         SELECT 
-            r.registration_code, r.title, r.first_name, r.last_name, r.status, r.bib_number, r.shirt_size, r.email, r.phone,
-            e.name AS event_name, e.color_code,
+            r.id AS registration_id, r.registration_code, r.title, r.first_name, r.last_name, 
+            r.status, r.bib_number, r.shirt_size, r.email, r.phone,
+            r.total_amount,
+            e.name AS event_name, e.color_code, e.event_code,
+            e.payment_bank, e.payment_account_name, e.payment_account_number, 
+            e.payment_qr_code_url, e.payment_deadline,
             d.name AS distance_name,
             rc.name AS category_name
         FROM registrations r

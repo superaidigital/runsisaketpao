@@ -53,6 +53,7 @@ $is_super_admin = ($staff_info['role'] === 'admin');
                     <div class="hidden sm:flex items-center space-x-4 border-l pl-6">
                         <a href="create_event.php" class="text-gray-600 hover:text-red-500 text-sm font-medium">สร้างกิจกรรมใหม่</a>
                         <a href="staff_management.php" class="text-gray-600 hover:text-red-500 text-sm font-medium">จัดการเจ้าหน้าที่</a>
+                        <a href="manage_posts.php" class="text-gray-600 hover:text-red-500 text-sm font-medium">จัดการข่าวสาร</a>
                         
                         <a href="slides_management.php" class="text-gray-600 hover:text-red-500 text-sm font-medium">จัดการสไลด์</a>
                         <a href="master_data.php" class="text-gray-600 hover:text-red-500 text-sm font-medium">ข้อมูลพื้นฐาน</a>

@@ -60,7 +60,7 @@ $title = isset($page_title) ? e($page_title) . ' | SISAKET PAO RUN' : 'SISAKET P
                 <i class="fa-solid fa-running text-2xl text-primary"></i>
                 <h1 class="text-xl font-bold">SISAKET PAO RUN</h1>
             </div>
-            <nav id="main-nav">
+            <nav id="main-nav" class="flex items-center space-x-4">
                 <?php if ($is_staff_logged_in): ?>
                     <div class="flex items-center space-x-4">
                         <span class="text-sm text-gray-700 hidden sm:inline">
@@ -76,6 +76,9 @@ $title = isset($page_title) ? e($page_title) . ' | SISAKET PAO RUN' : 'SISAKET P
                         <span class="text-sm text-gray-700 hidden sm:inline">
                             <i class="fa-solid fa-user-check mr-1 text-green-600"></i> สวัสดี, <strong><?= e($runner_info['first_name']) ?></strong>
                         </span>
+                         <a href="index.php?page=news" class="text-gray-600 hover:text-primary transition">
+                            <i class="fa-solid fa-newspaper mr-1"></i> ข่าวสาร
+                        </a>
                          <a href="index.php?page=dashboard" class="text-gray-600 hover:text-primary transition">
                             <i class="fa-solid fa-gauge-high mr-1"></i> แดชบอร์ด
                         </a>
@@ -84,6 +87,9 @@ $title = isset($page_title) ? e($page_title) . ' | SISAKET PAO RUN' : 'SISAKET P
                         </a>
                     </div>
                 <?php else: ?>
+                    <a href="index.php?page=news" class="text-gray-600 hover:text-primary transition">
+                        <i class="fa-solid fa-newspaper mr-1"></i> ข่าวสาร
+                    </a>
                     <a href="index.php?page=dashboard" class="text-gray-600 hover:text-primary transition">
                         <i class="fa-solid fa-user-circle mr-1"></i> สำหรับผู้สมัคร
                     </a>
@@ -93,4 +99,3 @@ $title = isset($page_title) ? e($page_title) . ' | SISAKET PAO RUN' : 'SISAKET P
 
         <!-- เนื้อหาหลักจะถูกโหลดตรงนี้ -->
         <main id="main-content" class="bg-white p-6 rounded-xl shadow-lg">
-

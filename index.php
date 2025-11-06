@@ -20,7 +20,9 @@ $allowed_pages = [
     'forgot_password', 
     'reset_password',
     'ebib',
-    'search_runner' // เพิ่มหน้าใหม่ที่นี่
+    'search_runner', // เพิ่มหน้าใหม่ที่นี่
+    'news', // [NEW] หน้าข่าวสาร
+    'news_detail' // [NEW] หน้าอ่านข่าว
 ];
 
 // If the requested page is not in the allowed list, default back to the home page.
@@ -57,6 +59,12 @@ switch ($page) {
     case 'search_runner': // เพิ่ม case สำหรับ title
         $page_title = 'ค้นหานักวิ่ง';
         break;
+    case 'news': // [NEW]
+        $page_title = 'ข่าวสารและประกาศ';
+        break;
+    case 'news_detail': // [NEW]
+        $page_title = 'อ่านข่าว';
+        break;
     default:
         $page_title = 'หน้าหลัก';
 }
@@ -75,4 +83,3 @@ if (isset($mysqli) && $mysqli instanceof mysqli) {
     $mysqli->close();
 }
 ?>
-
